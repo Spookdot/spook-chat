@@ -1,0 +1,19 @@
+[package]
+name = "spook_chat"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [
+  "spook-chat-db",
+  "."
+]
+
+[dependencies]
+dotenv = "0.15.0"
+rocket = { version = "0.5.0-rc.2", features = ["json", "secrets", "uuid"] }
+rocket_cors = "0.6.0-alpha1"
+spook_chat_db = { path = "spook-chat-db" }
+sqlx = { git = "https://github.com/launchbadge/sqlx", features = ["runtime-tokio-rustls", "postgres", "migrate", "uuid", "chrono", "macros"] }
+
