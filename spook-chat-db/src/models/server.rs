@@ -127,6 +127,18 @@ impl Server {
         .await
     }
 
+    pub async fn kick_user(&self, pool: &PgPool, user: &User) -> sqlx::Result<()> {
+        sqlx::query!(
+            "DELETE FROM users_servers WHERE server_id = $1 AND user_id = $2",
+            self.server_id,
+            user.user_id
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
     pub async fn ban_user(&self, pool: &PgPool, user: &User) -> sqlx::Result<()> {
         if !self.is_in_database(pool).await {
             return Err(sqlx::Error::RowNotFound);

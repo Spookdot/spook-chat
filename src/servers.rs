@@ -21,6 +21,14 @@ struct BanUserData {
     user_id: Uuid,
 }
 
+// keeping copy due to planned changes to BanUserData
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+struct KickUserData {
+    server_id: Uuid,
+    user_id: Uuid,
+}
+
 enum PermissionError {
     SqlxError(sqlx::Error),
     MissingPermissions,
@@ -199,11 +207,37 @@ async fn unban_user(
     }
 }
 
+#[post("/user/kick", data = "<data>")]
+async fn kick_user(
+    state: &State<MyState>,
+    login: LoginGuard,
+    data: Json<KickUserData>,
+) -> Result<String, PermissionError> {
+    let server = Server::filter_by_id(&state.conn, data.server_id).await?;
+
+    let permissions = server
+        .get_permissions(&state.conn, &login.user)
+        .await?
+        .ok_or(PermissionError::NoEntry)?;
+
+    if permissions.manage_users {
+        let user_to_kick = User::filter_by_id(&state.conn, data.user_id)
+            .await?
+            .ok_or(PermissionError::UserNoExist(data.user_id))?;
+        server.kick_user(&state.conn, &user_to_kick).await?;
+
+        Ok(format!("User {} kicked", data.user_id))
+    } else {
+        Err(PermissionError::MissingPermissions)
+    }
+}
+
 pub fn routes() -> Vec<rocket::Route> {
     routes![
         join_server,
         join_server_post,
         create_invite,
+        kick_user,
         ban_user,
         unban_user
     ]
