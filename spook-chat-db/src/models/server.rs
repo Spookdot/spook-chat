@@ -9,12 +9,12 @@ use uuid::Uuid;
 pub struct Server {
     pub server_id: Uuid,
     pub name: String,
+    pub owner_id: Uuid,
     pub created_at: DateTime<Utc>,
 }
 
 #[derive(FromRow)]
 pub struct Permissions {
-    pub owner: bool,
     pub manage_channels: bool,
     pub manage_users: bool,
     pub manage_invites: bool,
@@ -28,10 +28,11 @@ pub struct ChangePermissions {
 }
 
 impl Server {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &str, user: User) -> Self {
         Self {
             server_id: Uuid::new_v4(),
             name: name.to_string(),
+            owner_id: user.user_id,
             created_at: Utc::now(),
         }
     }
@@ -98,7 +99,7 @@ impl Server {
     ) -> sqlx::Result<Option<Permissions>> {
         sqlx::query_as!(
             Permissions, 
-            "SELECT owner, manage_channels, manage_users, manage_invites, banned 
+            "SELECT manage_channels, manage_users, manage_invites, banned 
             FROM users_servers WHERE server_id = $1 AND user_id = $2", 
             self.server_id, 
             user.user_id
